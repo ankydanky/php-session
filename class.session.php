@@ -66,7 +66,7 @@ class PHPSession {
 	 * @RETURN NONE
 	 */
 	
-	public function start_session($session_name=false, $secure=false) {
+	public function start_session($session_name=false, $secure=true) {
 		$ua = $_SERVER['HTTP_USER_AGENT'];
 		$botpattern = "(";
 			$botpattern .= "(bing|yandex|mj12|google|cc|org_|msn|cliqz|twitter)bot";
@@ -173,6 +173,7 @@ class PHPSession {
 		$qry->bindValue(4, $_SERVER['REMOTE_ADDR'], PDO::PARAM_STR);
 		$qry->bindValue(5, $_SERVER['HTTP_USER_AGENT'], PDO::PARAM_STR);
 		$qry->execute();
+		return true;
 	}
 	
 	/**
@@ -185,6 +186,7 @@ class PHPSession {
 		$qry = $this->db->prepare("DELETE FROM {$this->session_table} WHERE id=?");
 		$qry->bindValue(1, $id, PDO::PARAM_STR);
 		$qry->execute();
+		return true;
 	}
 	
 	/**
@@ -197,6 +199,7 @@ class PHPSession {
 		$qry = $this->db->prepare("DELETE FROM {$this->session_table} WHERE time<?");
 		$qry->bindValue(1, time() - $max, PDO::PARAM_INT);
 		$qry->execute();
+		return true;
 	}
 	
 	/**
