@@ -95,7 +95,9 @@ class PHPSession {
 		if ($session_name !== false) {
 			session_name($session_name);
 		}
-		return session_start();
+		session_start();
+		setcookie(session_name(), session_id(), time() + $this->timeout);
+		return true;
 	}
 	
 	/**
