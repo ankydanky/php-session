@@ -4,7 +4,7 @@
  * PHP DATABASE SESSION STORAGE
  * 
  * @author ANDY KAYL
- * @version 1.1
+ * @version 1.2
  * @license http://opensource.org/licenses/BSD-3-Clause
  *
  * Copyright (c) 2016, ANDY KAYL
@@ -46,7 +46,7 @@ class PHPSession {
 		$this->session_table = "sessions";
 		$this->session_hash = "sha256";
 		$this->timeout = 86400; // 86400 = 1 day
-		$this->enckey = "this_is_a_default_key_please_change";
+		$this->enckey = "this_is_a_default_string_please_change";
 		session_set_save_handler(
 			array($this, 'open'),
 			array($this, 'close'),
@@ -66,7 +66,7 @@ class PHPSession {
 	 * @RETURN NONE
 	 */
 	
-	public function start_session($session_name=false, $secure=true) {
+	public function start_session($session_name=false, $secure=false) {
 		$ua = $_SERVER['HTTP_USER_AGENT'];
 		$botpattern = "(";
 			$botpattern .= "(bing|yandex|mj12|google|cc|org_|msn|cliqz|twitter)bot";
@@ -76,8 +76,8 @@ class PHPSession {
 			return false;
 		}
 		$httponly = true;
-		if (empty($_SERVER['HTTPS'])) {
-			$secure = false;
+		if (!empty($_SERVER['HTTPS'])) {
+			$secure = true;
 		}
 		if (in_array($this->session_hash, hash_algos())) {
 			ini_set('session.hash_function', $this->session_hash);
@@ -152,11 +152,13 @@ class PHPSession {
 	 */
 	
 	public function read($id) {
+		$data = "";
 		$qry = $this->db->prepare("SELECT data FROM {$this->session_table} WHERE id=?");
-		$qry->bindValue(1, $id, PDO::PARAM_STR);
-		$qry->execute();
+		$qry->execute([$id]);
 		$r_sess = $qry->fetchAll(PDO::FETCH_ASSOC);
-		$data = (!empty($r_sess)) ? unserialize($this->decrypt($r_sess[0]['data'])) : "";
+		if (!empty($r_sess)) {
+			$data = unserialize($this->decrypt($r_sess[0]['data']));
+		}
 		return $data;
 	}
 	
@@ -168,13 +170,18 @@ class PHPSession {
 	 */
 	
 	public function write($id, $data) {
-		$qry = $this->db->prepare("REPLACE INTO {$this->session_table} (id, time, data, ip, uagent) VALUES (?, ?, ?, ?, ?)");
-		$qry->bindValue(1, $id, PDO::PARAM_STR);
-		$qry->bindValue(2, time(), PDO::PARAM_STR);
-		$qry->bindValue(3, $this->encrypt(serialize($data)), PDO::PARAM_STR);
-		$qry->bindValue(4, $_SERVER['REMOTE_ADDR'], PDO::PARAM_STR);
-		$qry->bindValue(5, $_SERVER['HTTP_USER_AGENT'], PDO::PARAM_STR);
-		$qry->execute();
+		$time = time();
+		$qry = $this->db->prepare("SELECT COUNT(id) AS cnt FROM {$this->session_table} WHERE id=?");
+		$qry->execute([$id]);
+		$res_sess = $qry->fetchAll(PDO::FETCH_ASSOC);
+		if ($res_sess[0]['cnt'] == 0) {
+			$qry = $this->db->prepare("INSERT INTO {$this->session_table} (id, time, data, ip, uagent) VALUES (?, ?, ?, ?, ?)");
+			$qry->execute([$id, $time, $this->encrypt(serialize($data)), $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']]);
+		}
+		else {
+			$qry = $this->db->prepare("UPDATE {$this->session_table} SET time=?, data=?, ip=?, uagent=? WHERE id=?");
+			$qry->execute([$time, $this->encrypt(serialize($data)), $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'], $id]);
+		}
 		return true;
 	}
 	
@@ -186,8 +193,7 @@ class PHPSession {
 	
 	public function destroy($id) {
 		$qry = $this->db->prepare("DELETE FROM {$this->session_table} WHERE id=?");
-		$qry->bindValue(1, $id, PDO::PARAM_STR);
-		$qry->execute();
+		$qry->execute([$id]);
 		return true;
 	}
 	
@@ -199,8 +205,7 @@ class PHPSession {
 	
 	public function gc($max) {
 		$qry = $this->db->prepare("DELETE FROM {$this->session_table} WHERE time<?");
-		$qry->bindValue(1, time() - $max, PDO::PARAM_INT);
-		$qry->execute();
+		$qry->execute([time() - $max]);
 		return true;
 	}
 	
