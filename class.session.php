@@ -4,7 +4,7 @@
  * PHP DATABASE SESSION STORAGE
  * 
  * @author ANDY KAYL
- * @version 1.2
+ * @version 1.3
  * @license http://opensource.org/licenses/BSD-3-Clause
  *
  * Copyright (c) 2016, ANDY KAYL
@@ -96,6 +96,7 @@ class PHPSession {
 			session_name($session_name);
 		}
 		session_start();
+		session_regenerate_id(true);
 		setcookie(session_name(), session_id(), time() + $this->timeout);
 		return true;
 	}
@@ -205,7 +206,7 @@ class PHPSession {
 	
 	public function gc($max) {
 		$qry = $this->db->prepare("DELETE FROM {$this->session_table} WHERE time<?");
-		$qry->execute([time() - $max]);
+		$qry->execute([time() - ($max * 2)]);
 		return true;
 	}
 	
