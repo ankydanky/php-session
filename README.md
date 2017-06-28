@@ -1,5 +1,7 @@
 # php-session
-PHPSession is a MySQL session storage class. It encrypts all data using openssl.
+PHPSession is a session storage class for the MySQL backend. It encrypts all session data using openssl and regenerates session IDs on every request.
+
+php-openssl and php-pdo/php-mysql package is needed.
 
 Usage:
 
