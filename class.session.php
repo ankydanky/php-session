@@ -96,7 +96,7 @@ class PHPSession {
 			session_name($session_name);
 		}
 		session_start();
-		session_regenerate_id(true);
+		#session_regenerate_id(true);  # <-- not working as expected in some situations but feel free to uncomment
 		setcookie(session_name(), session_id(), time() + $this->timeout);
 		return true;
 	}
