@@ -4,7 +4,7 @@
  * PHP DATABASE SESSION STORAGE
  * 
  * @author ANDY KAYL
- * @version 1.3
+ * @version 1.4
  * @license http://opensource.org/licenses/BSD-3-Clause
  *
  * Copyright (c) 2016, ANDY KAYL
@@ -88,7 +88,7 @@ class PHPSession {
 		ini_set('session.gc_probability', 1);
 		ini_set('session.gc_divisor', 1);
 		$cookieParams = session_get_cookie_params();
-		session_set_cookie_params($this->timeout, $cookieParams["path"], $cookieParams["domain"], $secure, $httponly);
+		session_set_cookie_params(time() + $this->timeout, $cookieParams["path"], $cookieParams["domain"], $secure, $httponly);
 		if ($this->sessionid) {
 			session_id($this->sessionid);
 		}
@@ -97,7 +97,6 @@ class PHPSession {
 		}
 		session_start();
 		#session_regenerate_id(true);  # <-- not working as expected in some situations but feel free to uncomment
-		setcookie(session_name(), session_id(), time() + $this->timeout);
 		return true;
 	}
 	
